@@ -1,0 +1,624 @@
+import React, { useState, useEffect } from "react";
+import { firestore } from "../firebase";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import {
+  Calendar,
+  Clock,
+  User,
+  Mail,
+  Phone,
+  ArrowRight,
+  Check,
+  Info,
+  X,
+  Camera,
+  MapPin,
+  Wrench,
+  Hash,
+} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+const BookingAll = () => {
+  // For the camera data
+  const [selectedCamera, setSelectedCamera] = useState(null);
+  const [loadingCamera, setLoadingCamera] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+
+  // State for form data
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    date: "",
+    time: "",
+    location: "",
+    cameraCount: 1,
+    includeAssembly: false,
+    comments: "",
+    cameraId: "", // To store which camera is being booked
+    cameraName: "", // To store the camera name for reference
+    imageUrl: "", // Added to store the camera image URL
+  });
+
+  // State for managing form submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Get URL parameters and navigation
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Get today's date as the minimum date for the date picker
+  const today = new Date().toISOString().split("T")[0];
+
+  // Extract camera ID from URL query parameters
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const cameraId = queryParams.get("cameraId");
+
+    if (cameraId) {
+      fetchCameraDetails(cameraId);
+      setFormData((prev) => ({
+        ...prev,
+        cameraId: cameraId,
+      }));
+    }
+  }, [location]);
+
+  // Fetch camera details from Firestore
+  const fetchCameraDetails = async (cameraId) => {
+    setLoadingCamera(true);
+    setCameraError("");
+
+    try {
+      const cameraRef = doc(firestore, "Products", cameraId);
+      const cameraSnap = await getDoc(cameraRef);
+
+      if (cameraSnap.exists()) {
+        const cameraData = {
+          id: cameraSnap.id,
+          ...cameraSnap.data(),
+        };
+        setSelectedCamera(cameraData);
+
+        // Update form data with camera details including the imageUrl
+        setFormData((prev) => ({
+          ...prev,
+          cameraName: cameraData.name,
+          imageUrl: cameraData.imageUrl || "", // Add the image URL to form data
+        }));
+      } else {
+        setCameraError("המצלמה המבוקשת לא נמצאה");
+      }
+    } catch (error) {
+      console.error("Error fetching camera details:", error);
+      setCameraError("אירעה שגיאה בטעינת פרטי המצלמה");
+    } finally {
+      setLoadingCamera(false);
+    }
+  };
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    // Handle checkbox separately
+    if (type === "checkbox") {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: checked,
+      }));
+      return;
+    }
+
+    // Handle number inputs separately to ensure we have a valid number
+    if (type === "number") {
+      const numValue = parseInt(value);
+      if (!isNaN(numValue) && numValue > 0) {
+        setFormData((prevData) => ({
+          ...prevData,
+          [name]: numValue,
+        }));
+      }
+      return;
+    }
+
+    // Handle other input types
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    // Basic validation
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.date ||
+      !formData.time ||
+      !formData.location
+    ) {
+      setErrorMessage("אנא מלא את כל שדות החובה");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      // Add booking to Firestore with all data including imageUrl
+      await addDoc(collection(firestore, "Bookings"), {
+        ...formData,
+        status: "pending",
+        createdAt: serverTimestamp(),
+      });
+
+      // Show success message
+      setSuccessMessage("ההזמנה נשלחה בהצלחה! ניצור איתך קשר בהקדם.");
+
+      // Reset form but keep camera-related fields
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        date: "",
+        time: "",
+        location: "",
+        cameraCount: 1,
+        includeAssembly: false,
+        comments: "",
+        cameraId: formData.cameraId, // Keep the camera ID
+        cameraName: formData.cameraName, // Keep the camera name
+        imageUrl: formData.imageUrl, // Keep the image URL
+      });
+
+      // Scroll to top to show the success message
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      console.error("Error submitting booking:", error);
+      setErrorMessage("אירעה שגיאה בשליחת ההזמנה. אנא נסה שוב מאוחר יותר.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Navigate back to home page
+  const navigateToHome = () => {
+    navigate("/");
+  };
+
+  return (
+    <div
+      className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50"
+      dir="rtl"
+    >
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        {/* Back button */}
+        <button
+          onClick={navigateToHome}
+          className="mb-6 flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
+        >
+          <ArrowRight size={20} className="ml-2" />
+          <span>חזרה לדף הראשי</span>
+        </button>
+
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="border-b border-gray-200 bg-gray-50 p-4 sm:p-6">
+            <h1 className="text-2xl font-bold text-indigo-900">הזמנת מצלמה</h1>
+            <p className="text-gray-600 mt-1">
+              מלא את הפרטים הבאים כדי להזמין את המצלמה שלך
+            </p>
+          </div>
+
+          {/* Success message */}
+          {successMessage && (
+            <div className="m-4 sm:m-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+              <div className="bg-green-100 p-2 rounded-full ml-3">
+                <Check size={20} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-green-800 font-medium">{successMessage}</p>
+                <p className="text-green-700 text-sm mt-1">
+                  נשלח לך אישור למייל בדקות הקרובות.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Error message */}
+          {errorMessage && (
+            <div className="m-4 sm:m-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+              <div className="bg-red-100 p-2 rounded-full ml-3">
+                <X size={20} className="text-red-600" />
+              </div>
+              <span className="text-red-800">{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Selected camera details */}
+          {loadingCamera ? (
+            <div className="m-4 sm:m-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : selectedCamera ? (
+            <div className="m-4 sm:m-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row items-center">
+                <div className="w-full sm:w-1/4 mb-4 sm:mb-0 flex justify-center">
+                  <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg overflow-hidden shadow-md">
+                    <img
+                      src={
+                        selectedCamera.imageUrl || "/src/assets/placeholder.png"
+                      }
+                      alt={selectedCamera.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.target.src = "/src/assets/placeholder.png";
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="w-full sm:w-3/4 text-center sm:text-right pr-4">
+                  <div className="space-y-1">
+                    <p className="font-medium text-indigo-900">
+                      <span className="font-bold">שם: </span>
+                      {selectedCamera.name}
+                    </p>
+                    <p className="font-medium text-indigo-900">
+                      <span className="font-bold">סוג: </span>
+                      {selectedCamera.typeHebrew}
+                    </p>
+                    <p className="font-medium text-indigo-900">
+                      <span className="font-bold">מגה פיקסל: </span>
+                      {selectedCamera.megapixels}
+                    </p>
+                    <p className="font-medium text-indigo-900">
+                      <span className="font-bold">מחיר: </span>
+                      {Math.round(selectedCamera.price * 3.7)} ₪
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : cameraError ? (
+            <div className="m-4 sm:m-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+              <div className="bg-red-100 p-2 rounded-full ml-3">
+                <X size={20} className="text-red-600" />
+              </div>
+              <span className="text-red-800">{cameraError}</span>
+            </div>
+          ) : (
+            <div className="m-4 sm:m-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center">
+              <div className="bg-blue-100 p-2 rounded-full ml-3">
+                <Info size={20} className="text-blue-600" />
+              </div>
+              <span className="text-blue-800">
+                לא נבחרה מצלמה ספציפית. אנא חזור לדף הראשי ובחר מצלמה.
+              </span>
+            </div>
+          )}
+
+          {/* Booking form */}
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+            {/* Personal Information */}
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center">
+                <User className="ml-2" size={20} />
+                פרטים אישיים
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="fullName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    שם מלא <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="ישראל ישראלי"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    דוא"ל <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail
+                      size={18}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="example@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    טלפון <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone
+                      size={18}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="05X-XXXXXXX"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Booking Details */}
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-indigo-900 mb-4 flex items-center">
+                <Calendar className="ml-2" size={20} />
+                פרטי ההזמנה
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="date"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    תאריך <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar
+                      size={18}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="date"
+                      id="date"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleInputChange}
+                      min={today}
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="time"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    שעה <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Clock
+                      size={18}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <select
+                      id="time"
+                      name="time"
+                      value={formData.time}
+                      onChange={handleInputChange}
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">בחר שעה</option>
+                      <option value="09:00">09:00</option>
+                      <option value="10:00">10:00</option>
+                      <option value="11:00">11:00</option>
+                      <option value="12:00">12:00</option>
+                      <option value="13:00">13:00</option>
+                      <option value="14:00">14:00</option>
+                      <option value="15:00">15:00</option>
+                      <option value="16:00">16:00</option>
+                      <option value="17:00">17:00</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* New field: Location */}
+                <div>
+                  <label
+                    htmlFor="location"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    מיקום <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin
+                      size={18}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="כתובת מלאה למשלוח"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* New field: Camera Count */}
+                <div>
+                  <label
+                    htmlFor="cameraCount"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    מספר מצלמות
+                  </label>
+                  <div className="relative">
+                    <Hash
+                      size={18}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="number"
+                      id="cameraCount"
+                      name="cameraCount"
+                      value={formData.cameraCount}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="10"
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* New field: Include Assembly */}
+                <div className="md:col-span-2">
+                  <div className="flex items-center mt-2">
+                    <input
+                      type="checkbox"
+                      id="includeAssembly"
+                      name="includeAssembly"
+                      checked={formData.includeAssembly}
+                      onChange={handleInputChange}
+                      className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <div className="ml-3 flex items-center">
+                      <Wrench size={18} className="text-indigo-500 ml-2" />
+                      <label
+                        htmlFor="includeAssembly"
+                        className="font-medium text-gray-700"
+                      >
+                        כולל הרכבה (תוספת תשלום)
+                      </label>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500 mr-8">
+                    סמן את האפשרות אם ברצונך שנרכיב את המצלמה עבורך
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label
+                    htmlFor="comments"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    הערות נוספות
+                  </label>
+                  <textarea
+                    id="comments"
+                    name="comments"
+                    value={formData.comments}
+                    onChange={handleInputChange}
+                    rows="4"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="הוסף הערות או בקשות מיוחדות כאן"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            {/* Information section */}
+            <div className="bg-indigo-50 p-4 rounded-lg mb-6 flex items-start">
+              <Info size={20} className="text-indigo-500 ml-2 mt-0.5" />
+              <div>
+                <p className="text-sm text-indigo-800 font-medium">מידע חשוב</p>
+                <ul className="text-xs text-indigo-700 mt-1 list-disc list-inside space-y-1">
+                  <li>שעות קבלה: ימים א'-ה' 09:00-17:00</li>
+                  <li>ביטול הזמנה אפשרי עד 24 שעות לפני המועד</li>
+                  <li>נדרשת הצגת תעודה מזהה בעת קבלת המצלמה</li>
+                  <li>שירות הרכבה כרוך בתוספת תשלום של ₪150</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Submit button */}
+            <div className="border-t border-gray-200 pt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={navigateToHome}
+                className="bg-white border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg ml-3 hover:bg-gray-50 transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5 ml-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    שולח...
+                  </>
+                ) : (
+                  "שלח הזמנה"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BookingAll;
