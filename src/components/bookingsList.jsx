@@ -20,8 +20,6 @@ import {
   User,
   Mail,
   Phone,
-  ArrowRight,
-  Check,
   Calendar,
   Clock,
   MapPin,
@@ -29,7 +27,6 @@ import {
   Filter,
   Search,
   Trash,
-  Edit,
   ChevronDown,
   ChevronUp,
   RefreshCw,
@@ -52,16 +49,15 @@ const BookingsList = () => {
   // State for expanded booking details
   const [expandedBookingId, setExpandedBookingId] = useState(null);
 
-  // State for editing
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingBooking, setEditingBooking] = useState(null);
-
   // State for sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState("");
 
   // State for image modal
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // State for image loading errors
+  const [imageErrors, setImageErrors] = useState({});
 
   // Navigation
   const navigate = useNavigate();
@@ -183,11 +179,6 @@ const BookingsList = () => {
     return true;
   });
 
-  // Navigate to home page
-  const navigateToHome = () => {
-    navigate("/");
-  };
-
   // Navigate to manager admin dashboard
   const navigateToManagerAdmin = () => {
     navigate("/manageradmin");
@@ -196,7 +187,6 @@ const BookingsList = () => {
   // Navigate to products management
   const navigateToProducts = () => {
     navigate("/manageradmin");
-    // You might need to pass state to tell ManagerAdmin to show products tab
   };
 
   // Logout function
@@ -261,10 +251,29 @@ const BookingsList = () => {
     }
   };
 
-  // Open image modal
-  const openImageModal = (imageUrl, e) => {
+  // Handle image error
+  const handleImageError = (bookingId) => {
+    setImageErrors((prev) => ({
+      ...prev,
+      [bookingId]: true,
+    }));
+  };
+
+  // Get image placeholder for failed images
+  const getPlaceholderImage = () => {
+    return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM5OTkiPteg15Ag16rXnteb15QgNeeCsDwvdGV4dD48L3N2Zz4=";
+  };
+
+  // Open image modal with error handling
+  const openImageModal = (imageUrl, bookingId, e) => {
     e.stopPropagation();
-    setSelectedImage(imageUrl);
+
+    // Use placeholder if image has error
+    if (imageErrors[bookingId]) {
+      setSelectedImage(getPlaceholderImage());
+    } else {
+      setSelectedImage(imageUrl);
+    }
   };
 
   // Close image modal
@@ -551,7 +560,11 @@ const BookingsList = () => {
                               <button
                                 className="bg-indigo-100 p-2 rounded-lg hover:bg-indigo-200 transition-colors"
                                 onClick={(e) =>
-                                  openImageModal(booking.imageUrl, e)
+                                  openImageModal(
+                                    booking.imageUrl,
+                                    booking.id,
+                                    e
+                                  )
                                 }
                               >
                                 <ImageIcon
@@ -726,7 +739,7 @@ const BookingsList = () => {
                                     </button>
                                   </div>
 
-                                  {/* Image display in expanded view */}
+                                  {/* Image display in expanded view with error handling */}
                                   {booking.imageUrl && (
                                     <div className="mt-4">
                                       <h3 className="font-medium text-indigo-900 mb-2">
@@ -734,11 +747,22 @@ const BookingsList = () => {
                                       </h3>
                                       <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
                                         <img
-                                          src={booking.imageUrl}
+                                          src={
+                                            imageErrors[booking.id]
+                                              ? getPlaceholderImage()
+                                              : booking.imageUrl
+                                          }
                                           alt="תמונת ההזמנה"
                                           className="w-full max-h-64 object-contain"
                                           onClick={(e) =>
-                                            openImageModal(booking.imageUrl, e)
+                                            openImageModal(
+                                              booking.imageUrl,
+                                              booking.id,
+                                              e
+                                            )
+                                          }
+                                          onError={() =>
+                                            handleImageError(booking.id)
                                           }
                                         />
                                       </div>
@@ -759,7 +783,8 @@ const BookingsList = () => {
         </div>
       </div>
 
-      {/* Image Modal */}
+      {/* Image Modal with error handling */}
+      {/* Image Modal with error handling */}
       {selectedImage && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
@@ -779,6 +804,11 @@ const BookingsList = () => {
               src={selectedImage}
               alt="מצלמה"
               className="max-w-full max-h-[80vh] object-contain"
+              onError={(e) => {
+                console.log("Modal image failed to load:", e.target.src);
+                e.target.src = getPlaceholderImage();
+                e.target.onerror = null;
+              }}
             />
           </div>
         </div>
