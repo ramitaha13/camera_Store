@@ -177,9 +177,7 @@ const HebrewCameraShowcase = () => {
         <div className="mt-3 flex justify-between items-center">
           <div>
             <p className="text-xs text-gray-500">מחיר:</p>
-            <p className="text-lg font-bold text-indigo-900">
-              ₪{Math.round(camera.price * 3.7)}
-            </p>
+            <p className="text-lg font-bold text-indigo-900">₪{camera.price}</p>
           </div>
 
           <button
@@ -200,7 +198,8 @@ const HebrewCameraShowcase = () => {
       dir="rtl"
     >
       {/* Login Button */}
-      <div className="fixed top-4 left-4 z-50">
+      {/* Login Button */}
+      <div className="flex justify-end p-4">
         <button
           className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 sm:px-5 py-2 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg font-medium text-sm sm:text-base"
           onClick={navigateToLogin}
@@ -347,7 +346,7 @@ const HebrewCameraShowcase = () => {
 
                       <div className="flex justify-between items-center mt-1 mb-1.5">
                         <span className="text-sm font-bold text-indigo-900">
-                          ₪{Math.round(camera.price * 3.7)}
+                          ₪{camera.price}
                         </span>
                         {camera.features && camera.features.length > 0 && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-800">
@@ -415,7 +414,7 @@ const HebrewCameraShowcase = () => {
                       <div className="flex justify-between items-center mb-3">
                         <RatingStars rating={camera.rating} />
                         <span className="text-xl font-bold text-indigo-900">
-                          ₪{Math.round(camera.price * 3.7)}
+                          ₪{camera.price}
                         </span>
                       </div>
 
@@ -554,7 +553,7 @@ const HebrewCameraShowcase = () => {
                         מחיר כולל
                       </p>
                       <p className="text-xl sm:text-3xl font-bold text-indigo-900">
-                        ₪{Math.round(selectedCamera.price * 3.7)}
+                        ₪{selectedCamera.price}
                       </p>
                     </div>
 

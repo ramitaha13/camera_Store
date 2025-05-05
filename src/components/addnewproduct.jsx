@@ -25,14 +25,6 @@ const AddNewProduct = () => {
     imageUrl: "",
   });
 
-  // Camera types mapping
-  const cameraTypes = [
-    { value: "DSLR", label: "מצלמת DSLR" },
-    { value: "Mirrorless", label: "מצלמה ללא מראה" },
-    { value: "Compact", label: "מצלמה קומפקטית" },
-    { value: "Action", label: "מצלמת אקשן" },
-  ];
-
   useEffect(() => {
     // Check if user is logged in
     const user = localStorage.getItem("user");
@@ -45,20 +37,19 @@ const AddNewProduct = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProductData({
-      ...productData,
-      [name]: value,
-    });
 
-    // Auto-fill typeHebrew based on type selection
+    // For type field, also update typeHebrew to be the same value
     if (name === "type") {
-      const selectedType = cameraTypes.find((type) => type.value === value);
-      if (selectedType) {
-        setProductData((prev) => ({
-          ...prev,
-          typeHebrew: selectedType.label,
-        }));
-      }
+      setProductData({
+        ...productData,
+        type: value,
+        typeHebrew: value, // Set typeHebrew to be the same as type
+      });
+    } else {
+      setProductData({
+        ...productData,
+        [name]: value,
+      });
     }
   };
 
@@ -297,21 +288,16 @@ const AddNewProduct = () => {
                   >
                     סוג מצלמה <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="type"
                     name="type"
                     value={productData.type}
                     onChange={handleInputChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="הכנס סוג מצלמה"
                     required
-                  >
-                    <option value="">בחר סוג מצלמה</option>
-                    {cameraTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -320,7 +306,7 @@ const AddNewProduct = () => {
                       htmlFor="price"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      מחיר (USD) <span className="text-red-500">*</span>
+                      מחיר <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"

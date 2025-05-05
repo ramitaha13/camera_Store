@@ -9,6 +9,8 @@ import Addnewproduct from "./components/addnewproduct.jsx";
 import EditProduct from "./components/editProduct.jsx";
 import BookingAll from "./components/bookingAll.jsx";
 import BookingsList from "./components/bookingsList.jsx";
+import Signup from "./components/signup.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 const router = createBrowserRouter([
   {
@@ -25,15 +27,27 @@ const router = createBrowserRouter([
   },
   {
     path: "/managerAdmin",
-    element: <ManagerAdmin />,
+    element: (
+      <ProtectedRoute>
+        <ManagerAdmin />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/addnewproduct",
-    element: <Addnewproduct />,
+    element: (
+      <ProtectedRoute>
+        <Addnewproduct />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/editproduct/:productId",
-    element: <EditProduct />,
+    element: (
+      <ProtectedRoute>
+        <EditProduct />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/bookingAll",
@@ -41,7 +55,19 @@ const router = createBrowserRouter([
   },
   {
     path: "/bookingsList",
-    element: <BookingsList />,
+    element: (
+      <ProtectedRoute>
+        <BookingsList />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/signup",
+    element: (
+      <ProtectedRoute>
+        <Signup />
+      </ProtectedRoute>
+    ),
   },
 ]);
 

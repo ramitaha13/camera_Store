@@ -27,6 +27,7 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
+  UserPlus,
 } from "lucide-react";
 
 const ManagerAdmin = () => {
@@ -147,6 +148,11 @@ const ManagerAdmin = () => {
   // New function to navigate to the bookingsList page
   const navigateToBookingsList = () => {
     window.location.href = "/bookingsList";
+  };
+
+  // New function to navigate to the signup page
+  const navigateToSignup = () => {
+    window.location.href = "/signup";
   };
 
   const handleDeleteProduct = async (productId) => {
@@ -385,6 +391,16 @@ const ManagerAdmin = () => {
                 <span>הזמנות</span>
               </button>
             </li>
+            {/* New Signup Button */}
+            <li>
+              <button
+                onClick={navigateToSignup}
+                className={`flex items-center space-x-2 w-full p-2 rounded hover:bg-indigo-700`}
+              >
+                <UserPlus size={20} className="ml-2" />
+                <span>הרשמת משתמשים</span>
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -401,7 +417,6 @@ const ManagerAdmin = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-8">
-        {/* Dashboard */}
         {activeTab === "dashboard" && (
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6">
@@ -606,7 +621,6 @@ const ManagerAdmin = () => {
           </div>
         )}
 
-        {/* Products Tab */}
         {activeTab === "products" && (
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6">
@@ -722,7 +736,7 @@ const ManagerAdmin = () => {
                           </td>
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
                             <div className="text-sm font-medium text-indigo-700">
-                              ₪{Math.round(product.price * 3.7)}
+                              ₪{product.price}
                             </div>
                           </td>
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
@@ -786,7 +800,6 @@ const ManagerAdmin = () => {
           </div>
         )}
 
-        {/* Orders Tab */}
         {activeTab === "orders" && (
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-6">

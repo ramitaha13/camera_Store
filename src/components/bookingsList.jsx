@@ -31,6 +31,7 @@ import {
   ChevronUp,
   RefreshCw,
   Image as ImageIcon,
+  UserPlus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -189,6 +190,11 @@ const BookingsList = () => {
     navigate("/manageradmin");
   };
 
+  // Navigate to signup page
+  const navigateToSignup = () => {
+    navigate("/signup");
+  };
+
   // Logout function
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -331,6 +337,16 @@ const BookingsList = () => {
                 <span>הזמנות</span>
               </button>
             </li>
+            {/* New Signup Button */}
+            <li>
+              <button
+                onClick={navigateToSignup}
+                className="flex items-center space-x-2 w-full p-2 rounded hover:bg-indigo-700"
+              >
+                <UserPlus size={20} className="ml-2" />
+                <span>הרשמת משתמשים</span>
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -362,20 +378,7 @@ const BookingsList = () => {
           <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="w-full md:w-auto mb-4 md:mb-0 flex flex-col sm:flex-row items-center">
-                <div className="flex items-center mb-3 sm:mb-0 sm:ml-4">
-                  <Filter size={18} className="text-indigo-500 ml-2" />
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    <option value="all">כל הסטטוסים</option>
-                    <option value="pending">ממתין</option>
-                    <option value="approved">מאושר</option>
-                    <option value="completed">הושלם</option>
-                    <option value="cancelled">בוטל</option>
-                  </select>
-                </div>
+                <div className="flex items-center mb-3 sm:mb-0 sm:ml-4"></div>
 
                 <div className="flex items-center w-full sm:w-auto">
                   <div className="relative w-full">
@@ -783,7 +786,6 @@ const BookingsList = () => {
         </div>
       </div>
 
-      {/* Image Modal with error handling */}
       {/* Image Modal with error handling */}
       {selectedImage && (
         <div

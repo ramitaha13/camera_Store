@@ -20,7 +20,6 @@ import {
   Camera,
   MapPin,
   Wrench,
-  Hash,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -38,7 +37,7 @@ const BookingAll = () => {
     date: "",
     time: "",
     location: "",
-    cameraCount: 1,
+    cameraCount: "1", // Changed to string instead of number
     includeAssembly: false,
     comments: "",
     cameraId: "", // To store which camera is being booked
@@ -118,13 +117,13 @@ const BookingAll = () => {
       return;
     }
 
-    // Handle number inputs separately to ensure we have a valid number
-    if (type === "number") {
-      const numValue = parseInt(value);
-      if (!isNaN(numValue) && numValue > 0) {
+    // Handle camera count specially
+    if (name === "cameraCount") {
+      // Allow empty string (when deleting) or valid numbers 1-10
+      if (value === "" || (parseInt(value) > 0 && parseInt(value) <= 10)) {
         setFormData((prevData) => ({
           ...prevData,
-          [name]: numValue,
+          [name]: value,
         }));
       }
       return;
@@ -158,10 +157,19 @@ const BookingAll = () => {
       return;
     }
 
+    // Ensure camera count is valid before submission
+    if (!formData.cameraCount || parseInt(formData.cameraCount) < 1) {
+      setFormData((prev) => ({
+        ...prev,
+        cameraCount: "1",
+      }));
+    }
+
     try {
       // Add booking to Firestore with all data including imageUrl
       await addDoc(collection(firestore, "Bookings"), {
         ...formData,
+        cameraCount: formData.cameraCount || "1", // Ensure it's never empty
         status: "pending",
         createdAt: serverTimestamp(),
       });
@@ -177,7 +185,7 @@ const BookingAll = () => {
         date: "",
         time: "",
         location: "",
-        cameraCount: 1,
+        cameraCount: "1", // Reset to string "1" instead of number 1
         includeAssembly: false,
         comments: "",
         cameraId: formData.cameraId, // Keep the camera ID
@@ -232,9 +240,6 @@ const BookingAll = () => {
               </div>
               <div>
                 <p className="text-green-800 font-medium">{successMessage}</p>
-                <p className="text-green-700 text-sm mt-1">
-                  נשלח לך אישור למייל בדקות הקרובות.
-                </p>
               </div>
             </div>
           )}
@@ -347,11 +352,7 @@ const BookingAll = () => {
                   >
                     דוא"ל <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Mail
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
+                  <div className="relative flex items-center">
                     <input
                       type="email"
                       id="email"
@@ -361,6 +362,10 @@ const BookingAll = () => {
                       className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="example@example.com"
                       required
+                    />
+                    <Mail
+                      size={18}
+                      className="absolute right-3 pointer-events-none text-gray-400"
                     />
                   </div>
                 </div>
@@ -372,11 +377,7 @@ const BookingAll = () => {
                   >
                     טלפון <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Phone
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
+                  <div className="relative flex items-center">
                     <input
                       type="tel"
                       id="phone"
@@ -386,6 +387,10 @@ const BookingAll = () => {
                       className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="05X-XXXXXXX"
                       required
+                    />
+                    <Phone
+                      size={18}
+                      className="absolute right-3 pointer-events-none text-gray-400"
                     />
                   </div>
                 </div>
@@ -407,11 +412,7 @@ const BookingAll = () => {
                   >
                     תאריך <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Calendar
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
+                  <div className="relative flex items-center">
                     <input
                       type="date"
                       id="date"
@@ -421,6 +422,10 @@ const BookingAll = () => {
                       min={today}
                       className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       required
+                    />
+                    <Calendar
+                      size={18}
+                      className="absolute right-3 pointer-events-none text-gray-400"
                     />
                   </div>
                 </div>
@@ -432,17 +437,13 @@ const BookingAll = () => {
                   >
                     שעה <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Clock
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
+                  <div className="relative flex items-center">
                     <select
                       id="time"
                       name="time"
                       value={formData.time}
                       onChange={handleInputChange}
-                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none"
                       required
                     >
                       <option value="">בחר שעה</option>
@@ -456,10 +457,14 @@ const BookingAll = () => {
                       <option value="16:00">16:00</option>
                       <option value="17:00">17:00</option>
                     </select>
+                    <Clock
+                      size={18}
+                      className="absolute right-3 pointer-events-none text-gray-400"
+                    />
                   </div>
                 </div>
 
-                {/* New field: Location */}
+                {/* Location field */}
                 <div>
                   <label
                     htmlFor="location"
@@ -467,11 +472,7 @@ const BookingAll = () => {
                   >
                     מיקום <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <MapPin
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       id="location"
@@ -482,10 +483,14 @@ const BookingAll = () => {
                       placeholder="כתובת מלאה למשלוח"
                       required
                     />
+                    <MapPin
+                      size={18}
+                      className="absolute right-3 pointer-events-none text-gray-400"
+                    />
                   </div>
                 </div>
 
-                {/* New field: Camera Count */}
+                {/* Camera Count - Allow empty field for editing */}
                 <div>
                   <label
                     htmlFor="cameraCount"
@@ -493,25 +498,24 @@ const BookingAll = () => {
                   >
                     מספר מצלמות
                   </label>
-                  <div className="relative">
-                    <Hash
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
+                  <div className="relative flex items-center">
                     <input
-                      type="number"
+                      type="text"
                       id="cameraCount"
                       name="cameraCount"
                       value={formData.cameraCount}
                       onChange={handleInputChange}
-                      min="1"
-                      max="10"
                       className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="1"
+                    />
+                    <Camera
+                      size={18}
+                      className="absolute right-3 pointer-events-none text-gray-400"
                     />
                   </div>
                 </div>
 
-                {/* New field: Include Assembly */}
+                {/* Include Assembly */}
                 <div className="md:col-span-2">
                   <div className="flex items-center mt-2">
                     <input
@@ -565,8 +569,7 @@ const BookingAll = () => {
                 <ul className="text-xs text-indigo-700 mt-1 list-disc list-inside space-y-1">
                   <li>שעות קבלה: ימים א'-ה' 09:00-17:00</li>
                   <li>ביטול הזמנה אפשרי עד 24 שעות לפני המועד</li>
-                  <li>נדרשת הצגת תעודה מזהה בעת קבלת המצלמה</li>
-                  <li>שירות הרכבה כרוך בתוספת תשלום של ₪150</li>
+                  <li>שירות הרכבה כרוך תוספת בתשלום </li>
                 </ul>
               </div>
             </div>
