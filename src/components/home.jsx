@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { firestore } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import {
@@ -26,6 +26,11 @@ const HebrewCameraShowcase = () => {
   const [error, setError] = useState(null);
   // State for mobile expanded card
   const [expandedCardId, setExpandedCardId] = useState(null);
+  // Refs for scroll animation sections
+  const headerRef = useRef(null);
+  const gridRef = useRef(null);
+  const detailsRef = useRef(null);
+  const ctaRef = useRef(null);
 
   // Fetch cameras from Firestore when component mounts
   useEffect(() => {
@@ -63,6 +68,48 @@ const HebrewCameraShowcase = () => {
 
     fetchCameras();
   }, []);
+
+  // Scroll animation observer
+  useEffect(() => {
+    const options = {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.1,
+    };
+
+    const handleIntersect = (entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("animate-reveal");
+          observer.unobserve(entry.target);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersect, options);
+
+    // Observe all elements with animation refs
+    if (headerRef.current) observer.observe(headerRef.current);
+    if (gridRef.current) observer.observe(gridRef.current);
+    if (detailsRef.current) observer.observe(detailsRef.current);
+    if (ctaRef.current) observer.observe(ctaRef.current);
+
+    // Observe all camera cards
+    document.querySelectorAll(".camera-card").forEach((card) => {
+      observer.observe(card);
+    });
+
+    return () => {
+      if (headerRef.current) observer.unobserve(headerRef.current);
+      if (gridRef.current) observer.unobserve(gridRef.current);
+      if (detailsRef.current) observer.unobserve(detailsRef.current);
+      if (ctaRef.current) observer.unobserve(ctaRef.current);
+
+      document.querySelectorAll(".camera-card").forEach((card) => {
+        observer.unobserve(card);
+      });
+    };
+  }, [cameras, selectedCamera]);
 
   const handleAssemble = (camera) => {
     setAssembleMessage(`ערכת ההרכבה של ${camera.name} נוספה לסל הקניות שלך!`);
@@ -135,7 +182,7 @@ const HebrewCameraShowcase = () => {
     if (!camera) return null;
 
     return (
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg mt-2 animate-fadeIn">
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg mt-2 animate-slideDown">
         <div className="grid grid-cols-2 gap-3 mb-3">
           {/* Camera details in a grid */}
           <div>
@@ -181,7 +228,7 @@ const HebrewCameraShowcase = () => {
           </div>
 
           <button
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center text-sm font-medium"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
             onClick={(e) => navigateToBooking(camera.id, e)}
           >
             <Calendar size={14} className="ml-1.5" />
@@ -197,20 +244,99 @@ const HebrewCameraShowcase = () => {
       className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 min-h-screen font-sans"
       dir="rtl"
     >
-      {/* Login Button */}
-      {/* Login Button */}
-      <div className="flex justify-end p-4">
-        <button
-          className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 sm:px-5 py-2 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg font-medium text-sm sm:text-base"
-          onClick={navigateToLogin}
-        >
-          כניסה
-        </button>
+      {/* Add custom animations to CSS */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+          from { transform: translateY(50px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+          from { transform: translateY(-20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes glowPulse {
+          0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        
+        .animate-reveal {
+          animation: fadeIn 0.8s ease-out forwards;
+        }
+        
+        .animate-slideUp {
+          animation: slideUp 0.8s ease-out forwards;
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.5s ease-out forwards;
+        }
+        
+        .animate-scaleIn {
+          animation: scaleIn 0.7s ease-out forwards;
+        }
+        
+        .animate-glowPulse {
+          animation: glowPulse 2s infinite;
+        }
+        
+        .opacity-0 {
+          opacity: 0;
+        }
+        
+        .camera-card {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: all 0.5s ease-out;
+        }
+        
+        .camera-card.animate-reveal {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        
+        .stagger-item {
+          transition-delay: calc(var(--index) * 0.1s);
+        }
+      `}</style>
+
+      {/* Sticky navbar */}
+      <div className="sticky top-0 z-40 bg-indigo-900/90 backdrop-blur-md border-b border-indigo-700/20 shadow-md">
+        <div className="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center">
+          <div className="flex items-center">
+            <Camera size={24} className="text-white mr-2" />
+            <span className="text-white font-bold hidden sm:inline">
+              קאמרה שופ
+            </span>
+          </div>
+
+          <button
+            className="bg-white text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg font-medium text-sm"
+            onClick={navigateToLogin}
+          >
+            כניסה
+          </button>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-3 sm:p-6">
-        <header className="mb-6 sm:mb-12 text-center">
-          <h1 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-3">
+        <header
+          ref={headerRef}
+          className="mb-6 sm:mb-12 text-center opacity-0 py-12 sm:py-16"
+        >
+          <h1 className="text-2xl sm:text-4xl font-bold text-indigo-900 mb-2 sm:mb-3 bg-clip-text  bg-gradient-to-r from-indigo-600 to-purple-600">
             בנה את המצלמה המושלמת שלך
           </h1>
           <p className="text-indigo-700 max-w-2xl mx-auto text-sm sm:text-base">
@@ -220,7 +346,7 @@ const HebrewCameraShowcase = () => {
         </header>
 
         {assembleMessage && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-emerald-200 text-emerald-700 p-4 mb-8 rounded-lg flex items-center justify-between shadow-md animate-fadeIn">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-emerald-200 text-emerald-700 p-4 mb-8 rounded-lg flex items-center justify-between shadow-md animate-slideDown">
             <div className="flex items-center">
               <div className="bg-emerald-100 p-2 rounded-full ml-3">
                 <Check size={20} className="text-emerald-600" />
@@ -268,13 +394,20 @@ const HebrewCameraShowcase = () => {
 
         {/* Camera grid */}
         {!isLoading && !error && cameras.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 mb-6 sm:mb-12">
-            {cameras.map((camera) => (
-              <div key={camera.id} className="relative">
+          <div
+            ref={gridRef}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 mb-6 sm:mb-12 opacity-0"
+          >
+            {cameras.map((camera, index) => (
+              <div
+                key={camera.id}
+                className="camera-card relative"
+                style={{ "--index": index }}
+              >
                 <div
-                  className={`bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl ${
+                  className={`bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl transform hover:scale-105 ${
                     selectedCamera?.id === camera.id
-                      ? "ring-2 ring-indigo-500 shadow-lg"
+                      ? "ring-2 ring-indigo-500 shadow-lg animate-glowPulse"
                       : "shadow-md"
                   }`}
                   onClick={(e) => {
@@ -282,6 +415,14 @@ const HebrewCameraShowcase = () => {
                     if (window.innerWidth >= 640) {
                       // sm breakpoint is 640px
                       setSelectedCamera(camera);
+
+                      // Scroll to details section if it exists
+                      if (detailsRef.current) {
+                        detailsRef.current.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }
                     } else {
                       // For mobile: toggle expanded state
                       toggleExpandCard(camera.id, e);
@@ -383,7 +524,7 @@ const HebrewCameraShowcase = () => {
                   {/* Desktop Card Layout (Vertical) - hidden on small screens */}
                   <div className="hidden sm:block">
                     {/* Image with gradient overlay */}
-                    <div className="relative overflow-hidden h-48">
+                    <div className="relative overflow-hidden h-48 group">
                       <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/20 to-transparent z-0"></div>
                       <img
                         src={camera.imageUrl || "/src/assets/placeholder.png"}
@@ -443,7 +584,7 @@ const HebrewCameraShowcase = () => {
                       </div>
 
                       <button
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2.5 px-4 rounded-lg flex items-center justify-center transition-colors font-medium"
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2.5 px-4 rounded-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105 font-medium"
                         onClick={(e) => navigateToBooking(camera.id, e)}
                       >
                         <Calendar size={16} className="ml-2" />
@@ -465,7 +606,10 @@ const HebrewCameraShowcase = () => {
         )}
 
         {selectedCamera && (
-          <div className="hidden sm:block bg-white rounded-xl shadow-lg overflow-hidden mb-6 sm:mb-8 transition-all duration-300 animate-fadeIn relative">
+          <div
+            ref={detailsRef}
+            className="hidden sm:block bg-white rounded-xl shadow-lg overflow-hidden mb-6 sm:mb-8 transition-all duration-300 opacity-0 relative"
+          >
             {/* Close button */}
             <button
               onClick={() => setSelectedCamera(null)}
@@ -559,7 +703,7 @@ const HebrewCameraShowcase = () => {
 
                     <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                       <button
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 px-4 sm:px-6 rounded-lg flex items-center justify-center transition-colors text-xs sm:text-sm sm:w-auto"
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 px-4 sm:px-6 rounded-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105 text-xs sm:text-sm sm:w-auto"
                         onClick={() => navigateToBooking(selectedCamera.id)}
                       >
                         <Calendar size={16} className="ml-2" />
@@ -584,7 +728,10 @@ const HebrewCameraShowcase = () => {
           </div>
         )}
 
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4 sm:p-8 mb-6 sm:mb-8 text-white shadow-lg">
+        <div
+          ref={ctaRef}
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-4 sm:p-8 mb-6 sm:mb-8 text-white shadow-lg opacity-0 transform translate-y-10"
+        >
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="mb-4 md:mb-0 text-center md:text-right">
               <h2 className="text-xl sm:text-2xl font-bold mb-2">
@@ -596,7 +743,7 @@ const HebrewCameraShowcase = () => {
               </p>
             </div>
             <button
-              className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors shadow-md text-sm sm:text-base w-full md:w-auto"
+              className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md text-sm sm:text-base w-full md:w-auto"
               onClick={() => (window.location.href = "tel:0537333343")}
             >
               <Phone size={18} className="inline-block ml-2" />
