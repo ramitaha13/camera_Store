@@ -16,6 +16,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  ZoomIn,
 } from "lucide-react";
 
 const HebrewCameraShowcase = () => {
@@ -26,6 +27,8 @@ const HebrewCameraShowcase = () => {
   const [error, setError] = useState(null);
   // State for mobile expanded card
   const [expandedCardId, setExpandedCardId] = useState(null);
+  // State for fullscreen image
+  const [fullscreenImage, setFullscreenImage] = useState(null);
   // Refs for scroll animation sections
   const headerRef = useRef(null);
   const gridRef = useRef(null);
@@ -129,6 +132,27 @@ const HebrewCameraShowcase = () => {
       setExpandedCardId(cameraId); // Expand the clicked camera
       setSelectedCamera(cameras.find((camera) => camera.id === cameraId)); // Also set as selected camera
     }
+  };
+
+  // Open image in fullscreen on mobile
+  const openFullscreenImage = (imageUrl, cameraName, e) => {
+    // Prevent event from bubbling up to parent elements
+    e.stopPropagation();
+
+    setFullscreenImage({
+      url: imageUrl || "/src/assets/placeholder.png",
+      name: cameraName,
+    });
+
+    // Prevent body scrolling when modal is open
+    document.body.style.overflow = "hidden";
+  };
+
+  // Close fullscreen image modal
+  const closeFullscreenImage = () => {
+    setFullscreenImage(null);
+    // Re-enable body scrolling
+    document.body.style.overflow = "auto";
   };
 
   const getFeatureIcon = (feature) => {
@@ -239,6 +263,48 @@ const HebrewCameraShowcase = () => {
     );
   };
 
+  // Fullscreen Image Modal Component
+  const FullscreenImageModal = ({ image, onClose }) => {
+    if (!image) return null;
+
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+        onClick={onClose}
+      >
+        <div className="relative w-full h-full flex flex-col">
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white/30 rounded-full p-2 text-white transition-colors"
+            onClick={onClose}
+            aria-label="סגור"
+          >
+            <X size={24} />
+          </button>
+
+          {/* Camera name */}
+          <div className="absolute top-4 left-4 right-16 z-10">
+            <h3 className="text-white text-lg font-bold truncate">
+              {image.name}
+            </h3>
+          </div>
+
+          {/* Image container */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <img
+              src={image.url}
+              alt={image.name}
+              className="max-w-full max-h-full object-contain animate-scaleIn"
+              onError={(e) => {
+                e.target.src = "/src/assets/placeholder.png";
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       className="bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 min-h-screen font-sans"
@@ -311,6 +377,12 @@ const HebrewCameraShowcase = () => {
           transition-delay: calc(var(--index) * 0.1s);
         }
       `}</style>
+
+      {/* Fullscreen Image Modal */}
+      <FullscreenImageModal
+        image={fullscreenImage}
+        onClose={closeFullscreenImage}
+      />
 
       {/* Sticky navbar */}
       <div className="sticky top-0 z-40 bg-indigo-900/90 backdrop-blur-md border-b border-indigo-700/20 shadow-md">
@@ -431,7 +503,7 @@ const HebrewCameraShowcase = () => {
                 >
                   {/* Mobile Card Layout (Horizontal) - visible only on small screens */}
                   <div className="flex sm:hidden w-full relative">
-                    {/* Image side */}
+                    {/* Image side with zoom icon for fullscreen */}
                     <div className="relative w-1/3">
                       <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/20 to-transparent z-0"></div>
                       <img
@@ -441,7 +513,19 @@ const HebrewCameraShowcase = () => {
                         onError={(e) => {
                           e.target.src = "/src/assets/placeholder.png";
                         }}
+                        onClick={(e) =>
+                          openFullscreenImage(camera.imageUrl, camera.name, e)
+                        }
                       />
+                      <button
+                        className="absolute bottom-2 right-2 bg-white/70 hover:bg-white/90 p-1.5 rounded-full text-indigo-600 shadow-md transition-all duration-300"
+                        onClick={(e) =>
+                          openFullscreenImage(camera.imageUrl, camera.name, e)
+                        }
+                        aria-label="הגדל תמונה"
+                      >
+                        <ZoomIn size={14} />
+                      </button>
                     </div>
 
                     {/* Content side */}
