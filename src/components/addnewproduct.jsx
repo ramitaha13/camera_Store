@@ -139,12 +139,7 @@ const AddNewProduct = () => {
 
     try {
       // Validate form
-      if (
-        !productData.name ||
-        !productData.price ||
-        !productData.type ||
-        !productData.description
-      ) {
+      if (!productData.name || !productData.price || !productData.description) {
         throw new Error("אנא מלא את כל השדות החובה");
       }
 
@@ -170,7 +165,13 @@ const AddNewProduct = () => {
       const formattedData = {
         ...productData,
         price: parseFloat(productData.price),
-        megapixels: parseFloat(productData.megapixels),
+        // Only include type and typeHebrew if they exist
+        type: productData.type || null,
+        typeHebrew: productData.type || null,
+        // Only parse megapixels if it exists
+        megapixels: productData.megapixels
+          ? parseFloat(productData.megapixels)
+          : null,
         rating: parseFloat(productData.rating),
         features: productData.features.filter(
           (feature) => feature.trim() !== ""
@@ -286,7 +287,7 @@ const AddNewProduct = () => {
                     htmlFor="type"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    סוג מצלמה <span className="text-red-500">*</span>
+                    סוג מצלמה
                   </label>
                   <input
                     type="text"
@@ -296,7 +297,6 @@ const AddNewProduct = () => {
                     onChange={handleInputChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="הכנס סוג מצלמה"
-                    required
                   />
                 </div>
 
@@ -326,7 +326,7 @@ const AddNewProduct = () => {
                       htmlFor="megapixels"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      מגה פיקסל <span className="text-red-500">*</span>
+                      מגה פיקסל
                     </label>
                     <input
                       type="number"
@@ -338,7 +338,6 @@ const AddNewProduct = () => {
                       min="0"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="לדוגמה: 24.2"
-                      required
                     />
                   </div>
                 </div>

@@ -828,7 +828,7 @@ const HebrewCameraShowcase = () => {
             </div>
             <button
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md text-sm sm:text-base w-full md:w-auto"
-              onClick={() => (window.location.href = "tel:0537333343")}
+              onClick={() => (window.location.href = "tel:0522637268")}
             >
               <Phone size={18} className="inline-block ml-2" />
               דבר עם מומחה
