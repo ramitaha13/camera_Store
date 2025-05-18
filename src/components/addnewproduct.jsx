@@ -20,6 +20,7 @@ const AddNewProduct = () => {
     price: "",
     megapixels: "",
     rating: "5.0",
+    discount: "",
     features: ["", "", "", ""],
     description: "",
     imageUrl: "",
@@ -173,6 +174,7 @@ const AddNewProduct = () => {
           ? parseFloat(productData.megapixels)
           : null,
         rating: parseFloat(productData.rating),
+        discount: productData.discount ? parseFloat(productData.discount) : 0,
         features: productData.features.filter(
           (feature) => feature.trim() !== ""
         ),
@@ -193,6 +195,7 @@ const AddNewProduct = () => {
         price: "",
         megapixels: "",
         rating: "5.0",
+        discount: "",
         features: ["", "", "", ""],
         description: "",
         imageUrl: "",
@@ -323,6 +326,29 @@ const AddNewProduct = () => {
                   </div>
                   <div>
                     <label
+                      htmlFor="discount"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      הנחה (%)
+                    </label>
+                    <input
+                      type="number"
+                      id="discount"
+                      name="discount"
+                      value={productData.discount}
+                      onChange={handleInputChange}
+                      step="1"
+                      min="0"
+                      max="100"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="לדוגמה: 15"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label
                       htmlFor="megapixels"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
@@ -340,27 +366,26 @@ const AddNewProduct = () => {
                       placeholder="לדוגמה: 24.2"
                     />
                   </div>
-                </div>
-
-                <div className="mb-4">
-                  <label
-                    htmlFor="rating"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    דירוג (1-5)
-                  </label>
-                  <input
-                    type="number"
-                    id="rating"
-                    name="rating"
-                    value={productData.rating}
-                    onChange={handleInputChange}
-                    step="0.1"
-                    min="1"
-                    max="5"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="לדוגמה: 4.8"
-                  />
+                  <div>
+                    <label
+                      htmlFor="rating"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      דירוג (1-5)
+                    </label>
+                    <input
+                      type="number"
+                      id="rating"
+                      name="rating"
+                      value={productData.rating}
+                      onChange={handleInputChange}
+                      step="0.1"
+                      min="1"
+                      max="5"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="לדוגמה: 4.8"
+                    />
+                  </div>
                 </div>
 
                 <div className="mb-4">

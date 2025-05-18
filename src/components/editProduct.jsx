@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { firestore } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { Camera, ArrowRight, Check, X, Info } from "lucide-react";
+import { Camera, ArrowRight, Check, X, Info, Tag } from "lucide-react";
 
 const EditProduct = () => {
   const { productId } = useParams();
@@ -23,20 +23,13 @@ const EditProduct = () => {
     type: "",
     typeHebrew: "",
     price: "",
+    discount: "",
     megapixels: "",
     rating: "5.0",
     features: ["", "", "", ""],
     description: "",
     imageUrl: "",
   });
-
-  // Camera types mapping
-  const cameraTypes = [
-    { value: "DSLR", label: "מצלמת DSLR" },
-    { value: "Mirrorless", label: "מצלמה ללא מראה" },
-    { value: "Compact", label: "מצלמה קומפקטית" },
-    { value: "Action", label: "מצלמת אקשן" },
-  ];
 
   useEffect(() => {
     // Check if user is logged in
@@ -68,6 +61,7 @@ const EditProduct = () => {
             type: data.type || "",
             typeHebrew: data.typeHebrew || "",
             price: data.price ? data.price.toString() : "",
+            discount: data.discount ? data.discount.toString() : "",
             megapixels: data.megapixels ? data.megapixels.toString() : "",
             rating: data.rating ? data.rating.toString() : "5.0",
             features: features,
@@ -100,20 +94,19 @@ const EditProduct = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProductData({
-      ...productData,
-      [name]: value,
-    });
 
-    // Auto-fill typeHebrew based on type selection
+    // For type field, also update typeHebrew to be the same value
     if (name === "type") {
-      const selectedType = cameraTypes.find((type) => type.value === value);
-      if (selectedType) {
-        setProductData((prev) => ({
-          ...prev,
-          typeHebrew: selectedType.label,
-        }));
-      }
+      setProductData({
+        ...productData,
+        type: value,
+        typeHebrew: value, // Set typeHebrew to be the same as type
+      });
+    } else {
+      setProductData({
+        ...productData,
+        [name]: value,
+      });
     }
   };
 
@@ -195,6 +188,16 @@ const EditProduct = () => {
     });
   };
 
+  // Calculate discounted price for preview
+  const calculateDiscountedPrice = () => {
+    if (!productData.price || !productData.discount) return null;
+    const price = parseFloat(productData.price);
+    const discount = parseFloat(productData.discount);
+    if (isNaN(price) || isNaN(discount) || discount <= 0) return null;
+
+    return (price - (price * discount) / 100).toFixed(2);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -203,12 +206,7 @@ const EditProduct = () => {
 
     try {
       // Validate form
-      if (
-        !productData.name ||
-        !productData.price ||
-        !productData.type ||
-        !productData.description
-      ) {
+      if (!productData.name || !productData.price || !productData.description) {
         throw new Error("אנא מלא את כל השדות החובה");
       }
 
@@ -232,7 +230,10 @@ const EditProduct = () => {
       const formattedData = {
         ...productData,
         price: parseFloat(productData.price),
-        megapixels: parseFloat(productData.megapixels),
+        discount: productData.discount ? parseFloat(productData.discount) : 0,
+        megapixels: productData.megapixels
+          ? parseFloat(productData.megapixels)
+          : null,
         rating: parseFloat(productData.rating),
         features: productData.features.filter(
           (feature) => feature.trim() !== ""
@@ -272,6 +273,9 @@ const EditProduct = () => {
       </div>
     );
   }
+
+  // Get the discounted price for preview if discount exists
+  const discountedPrice = calculateDiscountedPrice();
 
   return (
     <div
@@ -344,23 +348,17 @@ const EditProduct = () => {
                     htmlFor="type"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    סוג מצלמה <span className="text-red-500">*</span>
+                    סוג מצלמה
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="type"
                     name="type"
                     value={productData.type}
                     onChange={handleInputChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">בחר סוג מצלמה</option>
-                    {cameraTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="הכנס סוג מצלמה"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -369,7 +367,7 @@ const EditProduct = () => {
                       htmlFor="price"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      מחיר (USD) <span className="text-red-500">*</span>
+                      מחיר <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -386,10 +384,56 @@ const EditProduct = () => {
                   </div>
                   <div>
                     <label
+                      htmlFor="discount"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      הנחה (%)
+                    </label>
+                    <input
+                      type="number"
+                      id="discount"
+                      name="discount"
+                      value={productData.discount}
+                      onChange={handleInputChange}
+                      step="1"
+                      min="0"
+                      max="100"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="לדוגמה: 15"
+                    />
+                  </div>
+                </div>
+
+                {/* Discount Preview */}
+                {discountedPrice && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <Tag size={16} className="text-red-500 ml-2" />
+                      <span className="text-sm font-medium text-red-700">
+                        תצוגה מקדימה של מחיר אחרי הנחה:
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-xl font-bold text-red-600">
+                        ₪{discountedPrice}
+                      </span>
+                      <span className="text-sm text-gray-500 line-through ml-2">
+                        ₪{productData.price}
+                      </span>
+                      <span className="text-sm bg-red-200 text-red-800 px-2 py-0.5 rounded-full ml-2">
+                        {productData.discount}% הנחה
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label
                       htmlFor="megapixels"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      מגה פיקסל <span className="text-red-500">*</span>
+                      מגה פיקסל
                     </label>
                     <input
                       type="number"
@@ -401,30 +445,28 @@ const EditProduct = () => {
                       min="0"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="לדוגמה: 24.2"
-                      required
                     />
                   </div>
-                </div>
-
-                <div className="mb-4">
-                  <label
-                    htmlFor="rating"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    דירוג (1-5)
-                  </label>
-                  <input
-                    type="number"
-                    id="rating"
-                    name="rating"
-                    value={productData.rating}
-                    onChange={handleInputChange}
-                    step="0.1"
-                    min="1"
-                    max="5"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="לדוגמה: 4.8"
-                  />
+                  <div>
+                    <label
+                      htmlFor="rating"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      דירוג (1-5)
+                    </label>
+                    <input
+                      type="number"
+                      id="rating"
+                      name="rating"
+                      value={productData.rating}
+                      onChange={handleInputChange}
+                      step="0.1"
+                      min="1"
+                      max="5"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="לדוגמה: 4.8"
+                    />
+                  </div>
                 </div>
 
                 <div className="mb-4">
@@ -455,7 +497,7 @@ const EditProduct = () => {
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    מאפיינים עיקריים <span className="text-red-500">*</span>
+                    מאפיינים עיקריים
                   </label>
                   <p className="text-xs text-gray-500 mb-2">
                     הוסף עד 4 מאפיינים עיקריים של המצלמה
