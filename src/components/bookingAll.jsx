@@ -20,6 +20,7 @@ import {
   Camera,
   MapPin,
   Wrench,
+  Tag,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -70,6 +71,12 @@ const BookingAll = () => {
       }));
     }
   }, [location]);
+
+  // Calculate the discounted price
+  const calculateDiscountedPrice = (price, discount) => {
+    if (!discount || discount <= 0) return null;
+    return (price - (price * discount) / 100).toFixed(2);
+  };
 
   // Fetch camera details from Firestore
   const fetchCameraDetails = async (cameraId) => {
@@ -175,7 +182,10 @@ const BookingAll = () => {
       });
 
       // Show success message
-      setSuccessMessage("ההזמנה נשלחה בהצלחה! ניצור איתך קשר בהקדם.");
+      setSuccessMessage(
+        "ההזמנה נשלחה בהצלחה! ניצור איתך קשר בהקדם. מעביר לדף הבית בעוד 5 שניות..."
+      );
+      setCountingDown(true);
 
       // Reset form but keep camera-related fields
       setFormData({
@@ -195,6 +205,11 @@ const BookingAll = () => {
 
       // Scroll to top to show the success message
       window.scrollTo({ top: 0, behavior: "smooth" });
+
+      // Set timeout to redirect to home page after 5 seconds
+      setTimeout(() => {
+        navigateToHome();
+      }, 5000);
     } catch (error) {
       console.error("Error submitting booking:", error);
       setErrorMessage("אירעה שגיאה בשליחת ההזמנה. אנא נסה שוב מאוחר יותר.");
@@ -208,11 +223,72 @@ const BookingAll = () => {
     navigate("/");
   };
 
+  // State to track countdown visibility
+  const [countingDown, setCountingDown] = useState(false);
+
+  // Sale Label Component for the detail view
+  const SaleLabel = ({ discount }) => {
+    if (!discount || discount <= 0) return null;
+
+    return (
+      <div className="inline-flex items-center bg-red-500 text-white py-1 px-2 rounded-lg shadow-md mr-2">
+        <Tag size={14} className="ml-1" />
+        <span className="font-bold">{discount}%- הנחה</span>
+      </div>
+    );
+  };
+
+  // Display the price with discount if available
+  const PriceDisplay = ({ price, discount }) => {
+    const discountedPrice = calculateDiscountedPrice(price, discount);
+
+    if (!discountedPrice) {
+      return (
+        <span className="font-medium text-indigo-900">
+          {Math.round(price * 3.7)} ₪
+        </span>
+      );
+    }
+
+    return (
+      <div>
+        <span className="font-medium text-indigo-900">
+          {Math.round(discountedPrice * 3.7)} ₪
+        </span>
+        <span className="text-xs text-gray-500 line-through mr-2">
+          ₪ {Math.round(price * 3.7)}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50"
       dir="rtl"
     >
+      {/* Add custom animations to CSS */}
+      <style>{`
+        @keyframes pulseDiscount {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+        
+        .discount-badge {
+          animation: pulseDiscount 2s infinite;
+        }
+        
+        @keyframes countdown {
+          0% { width: 100%; }
+          100% { width: 0%; }
+        }
+        
+        .animate-countdown {
+          animation: countdown 5s linear forwards;
+        }
+      `}</style>
+
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         {/* Back button */}
         <button
@@ -238,8 +314,13 @@ const BookingAll = () => {
               <div className="bg-green-100 p-2 rounded-full ml-3">
                 <Check size={20} className="text-green-600" />
               </div>
-              <div>
+              <div className="flex-grow">
                 <p className="text-green-800 font-medium">{successMessage}</p>
+                {countingDown && (
+                  <div className="w-full bg-green-200 h-1.5 mt-2 rounded-full overflow-hidden">
+                    <div className="bg-green-500 h-full animate-countdown"></div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -262,7 +343,13 @@ const BookingAll = () => {
           ) : selectedCamera ? (
             <div className="m-4 sm:m-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
               <div className="flex flex-col sm:flex-row items-center">
-                <div className="w-full sm:w-1/4 mb-4 sm:mb-0 flex justify-center">
+                <div className="w-full sm:w-1/4 mb-4 sm:mb-0 flex justify-center relative">
+                  {/* Sale Label on the image */}
+                  {selectedCamera.discount > 0 && (
+                    <div className="absolute top-2 right-2 z-10 bg-red-500 text-white py-0.5 px-1.5 rounded text-xs font-bold discount-badge">
+                      {selectedCamera.discount}%- הנחה
+                    </div>
+                  )}
                   <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg overflow-hidden shadow-md">
                     <img
                       src={
@@ -292,7 +379,10 @@ const BookingAll = () => {
                     </p>
                     <p className="font-medium text-indigo-900">
                       <span className="font-bold">מחיר: </span>
-                      {Math.round(selectedCamera.price * 3.7)} ₪
+                      <PriceDisplay
+                        price={selectedCamera.price}
+                        discount={selectedCamera.discount}
+                      />
                     </p>
                   </div>
                 </div>
